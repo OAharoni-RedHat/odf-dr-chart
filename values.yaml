@@ -1,0 +1,144 @@
+---
+# Namespace for ODF SSL / CA post-install Jobs and RBAC (not cluster-proxy-ca-bundle).
+clusterCaMgt:
+  # -- Namespace for ODF CA prerequisites and Ramen trusted-CA workloads.
+  namespace: cluster-ca-mgt
+  # -- Create clusterCaMgt.namespace when installing the chart.
+  createNamespace: false
+
+global:
+  clusterDomain: cluster.example.com
+  # AWS: Hive AWS creds ExternalSecret, ClusterDeployment platform.aws, Submariner gateway/credentials. Use non-AWS (e.g. BareMetal) to skip those.
+  clusterPlatform: AWS
+
+# ODF post-install automation: MirrorPeer, prerequisites checker + Ramen hub trusted CA jobs/RBAC.
+odf:
+  postInstallFixesEnabled: true
+  # When postInstallFixesEnabled is false: chart creates DRCluster CRs (hub) for primary/secondary; set S3 profile names that exist in hub Ramen config.
+  drCluster:
+    primaryS3ProfileName: ""
+    secondaryS3ProfileName: ""
+
+# DR pair cluster names. Must match ACM ManagedCluster metadata.name.
+# Override via extraValueFiles (e.g. overrides/values-cluster-names.yaml).
+regionalDR:
+  - name: resilient
+    globalnetEnabled: false
+    clusters:
+      primary:
+        name: ocp-primary
+        clusterGroup: resilient
+        version: 4.18.7
+        install_config:
+          apiVersion: v1
+          baseDomain: '{{ join "." (slice (splitList "." $.Values.global.clusterDomain) 1) }}'
+          metadata:
+            name: ocp-primary
+          controlPlane:
+            name: master
+            replicas: 3
+            platform:
+              aws:
+                type: m5.4xlarge
+          compute:
+            - name: worker
+              replicas: 3
+              platform:
+                aws:
+                  type: m5.metal
+          networking:
+            clusterNetwork:
+              - cidr: 10.132.0.0/14
+                hostPrefix: 23
+            machineNetwork:
+              - cidr: 10.1.0.0/16
+            networkType: OVNKubernetes
+            serviceNetwork:
+              - 172.20.0.0/16
+          platform:
+            aws:
+              region: us-west-1
+              userTags:
+                project: ValidatedPatterns
+          publish: External
+          sshKey: ""
+          pullSecret: ""
+      secondary:
+        name: ocp-secondary
+        clusterGroup: resilient
+        version: 4.18.7
+        install_config:
+          apiVersion: v1
+          baseDomain: '{{ join "." (slice (splitList "." $.Values.global.clusterDomain) 1) }}'
+          metadata:
+            name: ocp-secondary
+          controlPlane:
+            name: master
+            replicas: 3
+            platform:
+              aws:
+                type: m5.4xlarge
+          compute:
+            - name: worker
+              replicas: 3
+              platform:
+                aws:
+                  type: m5.metal
+          networking:
+            clusterNetwork:
+              - cidr: 10.136.0.0/14
+                hostPrefix: 23
+            machineNetwork:
+              - cidr: 10.2.0.0/16
+            networkType: OVNKubernetes
+            serviceNetwork:
+              - 172.21.0.0/16
+          platform:
+            aws:
+              region: us-east-1
+              userTags:
+                project: ValidatedPatterns
+          publish: External
+          sshKey: ""
+          pullSecret: ""
+
+# Minimal cluster name/region overrides — used instead of replacing full regionalDR.
+# clusterOverrides:
+#   primary:
+#     name: ocp-primary
+#     version: 4.18.7
+#     install_config:
+#       metadata:
+#         name: ocp-primary
+#       platform:
+#         aws:
+#           region: us-west-1
+#   secondary:
+#     name: ocp-secondary
+#     ...
+
+submariner:
+  instanceType: m5.xlarge
+  ipsecNatPort: 4500
+  NATTEnable: true
+  cableDriver: vxlan
+  # EC2 security group tagging job (AWS only; requires global.clusterPlatform AWS).
+  sgTagJobEnabled: false
+
+ansible:
+  containerImage: quay.io/validatedpatterns/utility-container:latest
+  # Ansible-playbook verbosity (0-4).
+  verbosity: 0
+  # Argo CD resource sync-options for the ansible ConfigMap.
+  configMapArgoSyncOptions: Prune=false,ServerSideApply=true
+
+# Post-sync job odf-ramen-trusted-ca (wave 9): CA from hub cluster-proxy-ca-bundle; waits for Ramen s3StoreProfiles.
+odfRamenTrustedCa:
+  ramenS3WaitSeconds: 3600
+  trustedCaWaitSeconds: 3600
+  pollInterval: 15
+
+# odf-ssl-certificate-extractor Job: wait for both DR ManagedClusters before extraction.
+odfSslCertificateExtractor:
+  clusterReadinessMaxAttempts: 150
+  clusterReadinessSleepSeconds: 30
