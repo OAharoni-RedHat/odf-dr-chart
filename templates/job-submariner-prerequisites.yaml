@@ -47,5 +47,5 @@ spec:
       volumes:
       - name: ansible
         configMap:
-          name: regionaldr-ansible
+          name: odf-dr-ansible
       serviceAccountName: submariner-prerequisites-checker

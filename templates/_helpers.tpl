@@ -190,9 +190,9 @@
 {{- .Values.ansible.configMapArgoSyncOptions | default "Prune=false,ServerSideApply=true" -}}
 {{- end -}}
 
-{{/* Pod template annotation: keep ansible Jobs in sync with regionaldr-ansible content. */}}
+{{/* Pod template annotation: keep ansible Jobs in sync with odf-dr-ansible content. */}}
 {{- define "rdr.ansibleJobPodAnnotations" -}}
-checksum/regionaldr-ansible: {{ include "rdr.ansibleConfigChecksum" . | quote }}
+checksum/odf-dr-ansible: {{ include "rdr.ansibleConfigChecksum" . | quote }}
 {{- end -}}
 
 {{/*

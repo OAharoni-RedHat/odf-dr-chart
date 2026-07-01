@@ -1,11 +1,11 @@
 {{/*
-  Stage ConfigMap flat keys into /tmp/regionaldr-ansible (no ansible install).
+  Stage ConfigMap flat keys into /tmp/odf-dr-ansible (no ansible install).
   Use for long-running shell prereqs so output streams to pod logs without Ansible buffering.
 */}}
 {{- define "rdr.ansibleStageOnly" -}}
 set -euo pipefail
 export HOME=/tmp
-STAGE=/tmp/regionaldr-ansible
+STAGE=/tmp/odf-dr-ansible
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
 shopt -s nullglob

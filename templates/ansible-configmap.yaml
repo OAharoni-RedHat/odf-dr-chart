@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: regionaldr-ansible
+  name: odf-dr-ansible
   namespace: open-cluster-management
   labels:
-    app.kubernetes.io/name: regionaldr-ansible
+    app.kubernetes.io/name: odf-dr-ansible
   annotations:
     # Wave -1: before wave 0 cluster resources. When OutOfSync, must converge (see configMapArgoSyncOptions).
     argocd.argoproj.io/sync-wave: "-1"
@@ -18,10 +18,10 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: regionaldr-ansible
+  name: odf-dr-ansible
   namespace: {{ include "rdr.clusterCaMgtNamespace" . }}
   labels:
-    app.kubernetes.io/name: regionaldr-ansible
+    app.kubernetes.io/name: odf-dr-ansible
     app.kubernetes.io/component: ca-workloads
   annotations:
     argocd.argoproj.io/sync-wave: "0"
