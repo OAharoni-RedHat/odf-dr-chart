@@ -82,15 +82,12 @@ check_submariner_connectivity() {
 
 	# Check if both clusters are registered in Submariner
 	if [[ "$primary_cluster_id" == "$PRIMARY_CLUSTER" && "$secondary_cluster_id" == "$SECONDARY_CLUSTER" ]]; then
-		echo "✅ Both clusters are registered in Submariner"
+		echo "✅ Submariner connectivity verified between $PRIMARY_CLUSTER and $SECONDARY_CLUSTER"
 		return 0
 	else
 		echo "❌ Cluster IDs do not match expected values"
 		return 1
 	fi
-
-	echo "✅ Submariner connectivity verified between $PRIMARY_CLUSTER and $SECONDARY_CLUSTER"
-	return 0
 }
 
 # Function to download kubeconfig for a cluster

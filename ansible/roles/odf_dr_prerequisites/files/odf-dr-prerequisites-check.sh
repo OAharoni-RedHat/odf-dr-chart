@@ -147,7 +147,7 @@ check_s3_service_health() {
 
 	# If still not found, try checking deployment instead
 	if [[ $noobaa_operator_pods -eq 0 ]]; then
-		local noobaa_operator_deployment=$(oc --kubeconfig="$kubeconfig" get deployment -n openshift-storage --no-headers 2>/dev/null | grep -E "noobaa-operator|noobaa.*operator" | wc -l || echo "0")
+		local noobaa_operator_deployment=$(oc --kubeconfig="$kubeconfig" get deployment -n openshift-storage --no-headers 2>/dev/null | grep -cE "noobaa-operator|noobaa.*operator" || echo "0")
 		noobaa_operator_deployment=$(echo "$noobaa_operator_deployment" | tr -d ' \n')
 		if [[ $noobaa_operator_deployment -gt 0 ]]; then
 			echo "  NooBaa operator deployment found (pods may be managed by ODF operator)"

@@ -32,8 +32,6 @@ echo "✅ AWS CLI is available: $(aws --version 2>&1)"
 
 # Configuration
 KUBECONFIG_DIR="/tmp/kubeconfigs"
-MAX_ATTEMPTS=30
-SLEEP_INTERVAL=10
 
 # Create kubeconfig directory
 mkdir -p "$KUBECONFIG_DIR"
