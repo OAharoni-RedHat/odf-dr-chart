@@ -7,27 +7,36 @@ clusterCaMgt:
   createNamespace: false
 
 global:
+  # -- Base domain shared by all clusters (e.g. example.com). Used to derive per-cluster baseDomain.
   clusterDomain: cluster.example.com
-  # AWS: Hive AWS creds ExternalSecret, ClusterDeployment platform.aws, Submariner gateway/credentials. Use non-AWS (e.g. BareMetal) to skip those.
+  # -- Cloud platform type. AWS enables Hive ExternalSecret, ClusterDeployment platform.aws, Submariner gateway/credentials and SG-tag job. Use non-AWS (e.g. BareMetal) to skip those.
   clusterPlatform: AWS
 
 # ODF post-install automation: MirrorPeer, prerequisites checker + Ramen hub trusted CA jobs/RBAC.
 odf:
+  # -- Enable ODF post-install automation (MirrorPeer, prerequisites checker, Ramen trusted-CA jobs/RBAC).
   postInstallFixesEnabled: true
   # When postInstallFixesEnabled is false: chart creates DRCluster CRs (hub) for primary/secondary; set S3 profile names that exist in hub Ramen config.
   drCluster:
+    # -- S3 profile name for the primary DRCluster CR. Required only when postInstallFixesEnabled is false.
     primaryS3ProfileName: ""
+    # -- S3 profile name for the secondary DRCluster CR. Required only when postInstallFixesEnabled is false.
     secondaryS3ProfileName: ""
 
 # DR pair cluster names. Must match ACM ManagedCluster metadata.name.
 # Override via extraValueFiles (e.g. overrides/values-cluster-names.yaml).
 regionalDR:
-  - name: resilient
+  - # -- Name of this DR pair set. Must be unique within the regionalDR list and match the ACM policy placement label.
+    name: resilient
+    # -- Enable Submariner Globalnet. Required when primary and secondary cluster CIDRs overlap.
     globalnetEnabled: false
     clusters:
       primary:
+        # -- ACM ManagedCluster metadata.name for the primary cluster.
         name: ocp-primary
+        # -- Cluster group label for the primary cluster.
         clusterGroup: resilient
+        # -- OCP version for the primary cluster (used by Hive ClusterDeployment).
         version: 4.18.7
         install_config:
           apiVersion: v1
@@ -57,15 +66,21 @@ regionalDR:
               - 172.20.0.0/16
           platform:
             aws:
+              # -- AWS region for the primary cluster.
               region: us-west-1
               userTags:
                 project: ValidatedPatterns
           publish: External
+          # -- SSH public key injected into cluster nodes. Leave empty to use the hub's default.
           sshKey: ""
+          # -- OpenShift pull secret (base64-encoded JSON). Leave empty to inherit from hub.
           pullSecret: ""
       secondary:
+        # -- ACM ManagedCluster metadata.name for the secondary cluster.
         name: ocp-secondary
+        # -- Cluster group label for the secondary cluster.
         clusterGroup: resilient
+        # -- OCP version for the secondary cluster (used by Hive ClusterDeployment).
         version: 4.18.7
         install_config:
           apiVersion: v1
@@ -95,11 +110,14 @@ regionalDR:
               - 172.21.0.0/16
           platform:
             aws:
+              # -- AWS region for the secondary cluster.
               region: us-east-1
               userTags:
                 project: ValidatedPatterns
           publish: External
+          # -- SSH public key injected into cluster nodes. Leave empty to use the hub's default.
           sshKey: ""
+          # -- OpenShift pull secret (base64-encoded JSON). Leave empty to inherit from hub.
           pullSecret: ""
 
 # Minimal cluster name/region overrides — used instead of replacing full regionalDR.
@@ -118,27 +136,37 @@ regionalDR:
 #     ...
 
 submariner:
+  # -- EC2 instance type for Submariner gateway nodes.
   instanceType: m5.xlarge
+  # -- IPsec NAT-T UDP port used by Submariner.
   ipsecNatPort: 4500
+  # -- Enable NAT traversal (NAT-T) for Submariner IPsec tunnels.
   NATTEnable: true
+  # -- Submariner cable driver (vxlan or libreswan).
   cableDriver: vxlan
-  # EC2 security group tagging job (AWS only; requires global.clusterPlatform AWS).
+  # -- Enable EC2 security group tagging job. AWS only; requires global.clusterPlatform=AWS.
   sgTagJobEnabled: false
 
 ansible:
+  # -- Container image used for Ansible post-install jobs.
   containerImage: quay.io/validatedpatterns/utility-container:latest
-  # Ansible-playbook verbosity (0-4).
+  # -- Ansible-playbook verbosity level (0–4).
   verbosity: 0
-  # Argo CD resource sync-options for the ansible ConfigMap.
+  # -- Argo CD resource sync-options applied to the Ansible ConfigMap.
   configMapArgoSyncOptions: Prune=false,ServerSideApply=true
 
 # Post-sync job odf-ramen-trusted-ca (wave 9): CA from hub cluster-proxy-ca-bundle; waits for Ramen s3StoreProfiles.
 odfRamenTrustedCa:
+  # -- Maximum seconds to wait for Ramen s3StoreProfiles to be populated before the trusted-CA job gives up.
   ramenS3WaitSeconds: 3600
+  # -- Maximum seconds to wait for the hub cluster-proxy-ca-bundle trusted CA before the job gives up.
   trustedCaWaitSeconds: 3600
+  # -- Polling interval in seconds for readiness checks inside the trusted-CA job.
   pollInterval: 15
 
 # odf-ssl-certificate-extractor Job: wait for both DR ManagedClusters before extraction.
 odfSslCertificateExtractor:
+  # -- Maximum number of attempts to check DR ManagedCluster readiness before the extractor job fails.
   clusterReadinessMaxAttempts: 150
+  # -- Seconds to sleep between each ManagedCluster readiness poll attempt.
   clusterReadinessSleepSeconds: 30
