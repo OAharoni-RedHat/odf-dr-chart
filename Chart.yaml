@@ -3,11 +3,9 @@ name: odf-dr-chart
 description: >
   Standalone Helm chart for ODF storage infrastructure supporting Regional DR.
   Deploys ODF SSL certificate extraction, Submariner network overlay, MirrorPeer
-  storage mirroring, ODF DR prerequisites, and Ramen hub trusted-CA workloads.
-  Consumed by the ramendr pattern as a dedicated ArgoCD application.
+  storage mirroring, ODF DR prerequisites.
 keywords:
   - odf
   - pattern
   - regionaldr
-  - submariner
-version: 0.1.0
+version: 0.0.1

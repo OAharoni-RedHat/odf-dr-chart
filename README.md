@@ -1,8 +1,8 @@
 # odf-dr-chart
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square)
+![Version: 0.0.1](https://img.shields.io/badge/Version-0.0.1-informational?style=flat-square)
 
-Standalone Helm chart for ODF storage infrastructure supporting Regional DR. Deploys ODF SSL certificate extraction, Submariner network overlay, MirrorPeer storage mirroring, ODF DR prerequisites, and Ramen hub trusted-CA workloads. Consumed by the ramendr pattern as a dedicated ArgoCD application.
+Standalone Helm chart for ODF storage infrastructure supporting Regional DR. Deploys ODF SSL certificate extraction, Submariner network overlay, MirrorPeer storage mirroring, ODF DR prerequisites.
 
 This chart deploys ODF storage infrastructure supporting Regional DR: SSL certificate extraction, Submariner network overlay, MirrorPeer storage mirroring, ODF DR prerequisites, and Ramen hub trusted-CA workloads.
 Consumed by the ramendr pattern as a dedicated ArgoCD application.
