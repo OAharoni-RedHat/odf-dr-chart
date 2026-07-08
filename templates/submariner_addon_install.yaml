@@ -22,9 +22,9 @@ spec:
   globalnetEnabled: {{ $globalnetEnabled | default false }}
 
 
-{{- $effectivePrimary := include "rdr.effectivePrimaryCluster" . | fromJson }}
-{{- $effectiveSecondary := include "rdr.effectiveSecondaryCluster" . | fromJson }}
-{{- range list $effectivePrimary $effectiveSecondary }}
+{{- $primaryName := include "rdr.primaryClusterName" . | trim }}
+{{- $secondaryName := include "rdr.secondaryClusterName" . | trim }}
+{{- range list (dict "name" $primaryName) (dict "name" $secondaryName) }}
 {{- $cluster := . }}
 {{- $awsPlat := eq "1" (include "rdr.clusterPlatformAws" $ | trim) }}
 ---
