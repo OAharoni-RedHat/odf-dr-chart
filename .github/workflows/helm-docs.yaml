@@ -1,0 +1,32 @@
+name: helm-docs
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  helm-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Run helm-docs
+        run: make helm-docs
+
+      - name: Check README is up to date
+        run: |
+          if ! git diff --quiet README.md; then
+            echo "README.md is out of date. Run helm-docs locally and commit the updated file."
+            echo ""
+            git diff README.md
+            exit 1
+          fi
+          echo "README.md is up to date."
