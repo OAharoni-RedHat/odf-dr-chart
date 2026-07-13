@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# After MirrorPeer (and policies that populate cluster-proxy-ca-bundle), copy CA from the hub
-# cluster-proxy-ca-bundle ConfigMap — do not re-extract from router/spoke API servers.
+# After MirrorPeer (and vp-manage-proxy-cluster-ca populates vp-pattern-proxy-ca-bundle), copy CA from
+# the hub vp-pattern-proxy-ca-bundle ConfigMap — do not re-extract from router/spoke API servers.
 # Wait until Ramen hub config has s3StoreProfiles (from ODF/MirrorPeer), then patch caCertificates only.
 set -euo pipefail
 
@@ -27,20 +27,23 @@ mkdir -p "$WORK_DIR"
 
 wait_for_trusted_ca() {
 	local deadline=$((SECONDS + TRUSTED_CA_WAIT_SECONDS))
-	echo "Waiting for cluster-proxy-ca-bundle (openshift-config) with non-trivial ca-bundle.crt (max ${TRUSTED_CA_WAIT_SECONDS}s)..."
+	# Use the differential bundle: cluster-specific CAs only (API + ingress, no system trust store).
+	# This is the correct material for Ramen s3StoreProfiles caCertificates — concise and focused
+	# on the CAs needed to verify NooBaa S3 external route TLS certificates.
+	echo "Waiting for vp-pattern-proxy-ca-bundle-differential (openshift-config) with non-trivial cabundle (max ${TRUSTED_CA_WAIT_SECONDS}s)..."
 	while ((SECONDS < deadline)); do
 		local data bytes
-		data=$(oc get configmap cluster-proxy-ca-bundle -n openshift-config -o jsonpath='{.data.ca-bundle\.crt}' 2>/dev/null || true)
+		data=$(oc get configmap vp-pattern-proxy-ca-bundle-differential -n openshift-config -o jsonpath='{.data.cabundle}' 2>/dev/null || true)
 		bytes=$(printf '%s' "$data" | wc -c | tr -d ' ')
 		if [[ "${bytes:-0}" -ge 64 ]]; then
 			printf '%s' "$data" >"$WORK_DIR/combined-ca-bundle.crt"
-			echo "  ✅ trusted CA bundle captured (${bytes} bytes)"
+			echo "  ✅ differential CA bundle captured (${bytes} bytes)"
 			return 0
 		fi
-		echo "  ... ca-bundle.crt bytes=${bytes:-0}, retry in ${POLL_INTERVAL}s"
+		echo "  ... cabundle bytes=${bytes:-0}, retry in ${POLL_INTERVAL}s"
 		sleep "$POLL_INTERVAL"
 	done
-	die "cluster-proxy-ca-bundle not ready in time — ensure ACM/ODF policy populated it (see opp-policy-chart policy-odf-managed-cluster-ssl)"
+	die "vp-pattern-proxy-ca-bundle-differential not ready in time — ensure vp-manage-proxy-cluster-ca chart differentialBundle is enabled and synced"
 }
 
 count_s3_profiles() {
