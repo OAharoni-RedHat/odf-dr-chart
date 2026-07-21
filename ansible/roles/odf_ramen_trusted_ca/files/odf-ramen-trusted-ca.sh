@@ -75,16 +75,13 @@ wait_for_ramen_s3_profiles() {
 	echo "Waiting for ramen-hub-operator-config s3StoreProfiles (openshift-operators, max ${RAMEN_CM_WAIT_SECONDS}s)..."
 	while ((SECONDS < deadline)); do
 		yaml=$(oc get configmap ramen-hub-operator-config -n openshift-operators -o jsonpath='{.data.ramen_manager_config\.yaml}' 2>/dev/null || true)
-		local yaml_empty="YES" grep_match="NO"
-		[[ -n "$yaml" ]] && yaml_empty="NO"
-		echo "$yaml" | grep -q 's3StoreProfiles' 2>/dev/null && grep_match="YES" || true
+		# Strip carriage returns — configmap YAML may have CRLF line endings.
+		yaml=$(printf '%s' "$yaml" | tr -d '\r')
 		c=$(count_s3_profiles "$yaml")
-		echo "  [$(date -u +%T)] yaml_empty=${yaml_empty} grep_match=${grep_match} count=${c}"
-		if [[ "$yaml_empty" == "NO" && "$grep_match" == "YES" ]]; then
-			if [[ "${c:-0}" -ge 2 ]]; then
-				echo "  ✅ ramen_manager_config has s3StoreProfiles (count≈$c)"
-				return 0
-			fi
+		echo "  [$(date -u +%T)] yaml_empty=$([ -z "$yaml" ] && echo YES || echo NO) count=${c}"
+		if [[ -n "$yaml" && "${c:-0}" -ge 2 ]]; then
+			echo "  ✅ ramen_manager_config has s3StoreProfiles (count≈$c)"
+			return 0
 		fi
 		echo "  ... profiles not ready yet (need >=2, got ${c:-0}), retry in ${POLL_INTERVAL}s"
 		sleep "$POLL_INTERVAL"
