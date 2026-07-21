@@ -14,6 +14,12 @@ POLL_INTERVAL="${POLL_INTERVAL:-15}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RAMEN_SCRIPT="${SCRIPT_DIR}/odf-ssl-ramen-hub-configmap.sh"
 
+LOG_FILE="${WORK_DIR:-/tmp/odf-ssl-certs}/ramen-trusted-ca.log"
+mkdir -p "${WORK_DIR:-/tmp/odf-ssl-certs}"
+# Tee all output to a log file readable via oc exec while Ansible buffers stdout.
+exec > >(tee -a "$LOG_FILE") 2>&1
+echo "[$(date -u +%T)] odf-ramen-trusted-ca.sh started"
+
 die() {
 	echo "❌ odf-ramen-trusted-ca.sh: $*" >&2
 	exit 1
@@ -69,14 +75,18 @@ wait_for_ramen_s3_profiles() {
 	echo "Waiting for ramen-hub-operator-config s3StoreProfiles (openshift-operators, max ${RAMEN_CM_WAIT_SECONDS}s)..."
 	while ((SECONDS < deadline)); do
 		yaml=$(oc get configmap ramen-hub-operator-config -n openshift-operators -o jsonpath='{.data.ramen_manager_config\.yaml}' 2>/dev/null || true)
-		if [[ -n "$yaml" ]] && echo "$yaml" | grep -q 's3StoreProfiles'; then
-			c=$(count_s3_profiles "$yaml")
+		local yaml_empty="YES" grep_match="NO"
+		[[ -n "$yaml" ]] && yaml_empty="NO"
+		echo "$yaml" | grep -q 's3StoreProfiles' 2>/dev/null && grep_match="YES" || true
+		c=$(count_s3_profiles "$yaml")
+		echo "  [$(date -u +%T)] yaml_empty=${yaml_empty} grep_match=${grep_match} count=${c}"
+		if [[ "$yaml_empty" == "NO" && "$grep_match" == "YES" ]]; then
 			if [[ "${c:-0}" -ge 2 ]]; then
 				echo "  ✅ ramen_manager_config has s3StoreProfiles (count≈$c)"
 				return 0
 			fi
 		fi
-		echo "  ... profiles not ready yet (need >=2), retry in ${POLL_INTERVAL}s"
+		echo "  ... profiles not ready yet (need >=2, got ${c:-0}), retry in ${POLL_INTERVAL}s"
 		sleep "$POLL_INTERVAL"
 	done
 	die "ramen-hub-operator-config never gained s3StoreProfiles — confirm MirrorPeer and hub Ramen operator reconciled"
