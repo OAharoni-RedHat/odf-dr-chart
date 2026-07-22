@@ -1,6 +1,6 @@
 # odf-dr-chart
 
-![Version: 0.0.1](https://img.shields.io/badge/Version-0.0.1-informational?style=flat-square)
+![Version: 0.0.2](https://img.shields.io/badge/Version-0.0.2-informational?style=flat-square)
 
 Standalone Helm chart for ODF storage infrastructure supporting Regional DR. Deploys ODF SSL certificate extraction, Submariner network overlay, MirrorPeer storage mirroring, ODF DR prerequisites.
 
