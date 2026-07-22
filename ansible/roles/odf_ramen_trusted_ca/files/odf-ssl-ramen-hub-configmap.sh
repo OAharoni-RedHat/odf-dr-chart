@@ -116,7 +116,7 @@ if oc get configmap ramen-hub-operator-config -n openshift-operators &>/dev/null
 		# Pure-Python patch using only built-in modules (no PyYAML required).
 		# Reads combined-ca-bundle.crt directly to avoid E2BIG env-var size limits.
 		# Strips any existing caCertificates lines then injects after each s3ProfileName.
-		WORK_DIR="$WORK_DIR" python3 - <<'PYEOF'
+		WORK_DIR="$WORK_DIR" python3 - <<'PYEOF' || die "python3 failed to patch existing-ramen-config.yaml"
 import os, re, base64
 
 work_dir = os.environ["WORK_DIR"]
@@ -141,7 +141,6 @@ for line in lines:
 with open(path, "w") as f:
     f.writelines(result)
 PYEOF
-		[[ $? -eq 0 ]] || die "python3 failed to patch existing-ramen-config.yaml"
 		grep -q "caCertificates" "$WORK_DIR/existing-ramen-config.yaml" || die "patched file has no caCertificates"
 		cp "$WORK_DIR/existing-ramen-config.yaml" "$WORK_DIR/ramen_manager_config.yaml"
 		PATCHED_VIA_YQ=true
@@ -168,7 +167,7 @@ s3StoreProfiles:
 	# which exceeds the 262144-byte annotation limit when caCertificates is large.
 	echo "  Patching ramen-hub-operator-config via oc patch --type=merge..."
 	PATCH_JSON="$WORK_DIR/ramen-patch.json"
-	WORK_DIR="$WORK_DIR" python3 - <<'PYEOF'
+	WORK_DIR="$WORK_DIR" python3 - <<'PYEOF' || die "python3 failed to build ramen-patch.json"
 import json, os, sys
 work_dir = os.environ["WORK_DIR"]
 with open(os.path.join(work_dir, "ramen_manager_config.yaml"), "r") as f:
@@ -176,7 +175,6 @@ with open(os.path.join(work_dir, "ramen_manager_config.yaml"), "r") as f:
 with open(os.path.join(work_dir, "ramen-patch.json"), "w") as f:
     json.dump({"data": {"ramen_manager_config.yaml": data}}, f)
 PYEOF
-	[[ $? -eq 0 ]] || die "python3 failed to build ramen-patch.json"
 
 	UPDATE_EXIT_CODE=1
 	UPDATE_OUTPUT=""
